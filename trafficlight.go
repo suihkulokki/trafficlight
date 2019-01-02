@@ -9,8 +9,9 @@ import (
 )
 
 type SwapState struct {
-	isSwapping bool
-	count      int
+	isSwapping  bool
+	count       int
+	lastSwapped time.Time
 }
 
 var stoplist []Process
@@ -39,6 +40,8 @@ func main() {
 	x := readSwapCount()
 	swap.isSwapping = false
 	swap.count = x
+	threeMinutesAgo := time.Minute * time.Duration(-3)
+	swap.lastSwapped = time.Now().Add(threeMinutesAgo)
 
 	Sid := flag.Int("sid", -1, "Session ID of processess to manage")
 	Min := flag.Int("min", 1, "Minimum amount of compiles to run at the same time")
@@ -49,6 +52,7 @@ func main() {
 		if x > swap.count {
 			swap.isSwapping = true
 			swap.count = x
+			swap.lastSwapped = time.Now()
 			process, err := pickVictim(*Sid, *Min)
 			if err != nil {
 				fmt.Println(err)
@@ -58,15 +62,19 @@ func main() {
 				stoplist = append(stoplist, process)
 			}
 		} else {
-			swap.isSwapping = false
-			if len(stoplist) > 0 {
-				reanimate := stoplist[len(stoplist)-1]
-				fmt.Println("Re-animate:", reanimate.pid)
-				syscall.Kill(reanimate.pid, syscall.SIGCONT)
-				stoplist = stoplist[:len(stoplist)-1]
+			if time.Since(swap.lastSwapped) > (5 * time.Second) {
+				if len(stoplist) > 0 {
+					swap.lastSwapped = time.Now() // just to roll back a bit slower
+					reanimate := stoplist[len(stoplist)-1]
+					fmt.Println("Re-animate:", reanimate.pid)
+					syscall.Kill(reanimate.pid, syscall.SIGCONT)
+					stoplist = stoplist[:len(stoplist)-1]
+				} else {
+					swap.isSwapping = false
+				}
 			}
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 
 	}
 }
