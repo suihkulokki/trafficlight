@@ -37,6 +37,7 @@ func readSwapCount() int {
 
 func main() {
 	var swap SwapState
+	var backOffDelay time.Duration
 	x := readSwapCount()
 	swap.isSwapping = false
 	swap.count = x
@@ -60,10 +61,14 @@ func main() {
 				fmt.Println("Stopping:", process.pid)
 				syscall.Kill(process.pid, syscall.SIGSTOP)
 				stoplist = append(stoplist, process)
+				if (backOffDelay > 5) { 
+					backOffDelay -= 5
+				}
 			}
 		} else {
-			if time.Since(swap.lastSwapped) > (5 * time.Second) {
+			if time.Since(swap.lastSwapped) > (backOffDelay * time.Second) {
 				if len(stoplist) > 0 {
+					backOffDelay += 5
 					swap.lastSwapped = time.Now() // just to roll back a bit slower
 					reanimate := stoplist[len(stoplist)-1]
 					fmt.Println("Re-animate:", reanimate.pid)
@@ -71,6 +76,7 @@ func main() {
 					stoplist = stoplist[:len(stoplist)-1]
 				} else {
 					swap.isSwapping = false
+					backOffDelay = 5
 				}
 			}
 		}
