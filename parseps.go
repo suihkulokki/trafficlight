@@ -33,10 +33,10 @@ func lowerMinima(min int) (int, error) {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		i, err := fmt.Sscanf(scanner.Text(), "SwapFree: %d kB", &swapFree)
-        if err != nil {
-            return min, err
-        }
-		if (i == 1 && swapFree < 1000000 ){
+		if err != nil {
+			return min, err
+		}
+		if i == 1 && swapFree < 1000000 {
 			return 1, nil
 		}
 	}

@@ -61,7 +61,7 @@ func main() {
 				fmt.Println("Stopping:", process.pid)
 				syscall.Kill(process.pid, syscall.SIGSTOP)
 				stoplist = append(stoplist, process)
-				if (backOffDelay > 5) { 
+				if backOffDelay > 5 {
 					backOffDelay -= 5
 				}
 			}
